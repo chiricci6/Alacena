@@ -92,8 +92,9 @@
         <label for="productBarcode">Código de Barras:</label>
         <input type="text" id="productBarcode" readonly required>
         <button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
-        <br><br>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+
+        <br><br>
         <label for="productQuantity">Cantidad:</label>
         <input type="number" id="productQuantity" value="1" min="1" required>
         <br><br>
@@ -113,9 +114,9 @@
         <label for="withdrawBarcode">Código de Barras:</label>
         <input type="text" id="withdrawBarcode" readonly required>
         <button type="button" onclick="scanBarcode('withdrawBarcode')">Escanear Código</button>
-        <br><br>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
+        <br><br>
         <label for="withdrawQuantity">Cantidad a retirar:</label>
         <input type="number" id="withdrawQuantity" value="1" min="1" required>
         <br><br>
@@ -131,12 +132,10 @@
       <span class="close" onclick="closeModifyProductModal()">&times;</span>
       <h2>Modificar Producto</h2>
       <form id="modifyProductForm">
-        <label for="productBarcode">Código de Barras:</label>
-<input type="text" id="productBarcode" required>
+        <label for="modifyBarcode">Código de Barras:</label>
+        <input type="text" id="modifyBarcode" readonly required>
+        <button type="button" onclick="scanBarcode('modifyBarcode')">Escanear Código</button>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
-
-<button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
-<button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
         <br><br>
         <!-- Se muestran los campos de modificación una vez encontrado el producto -->
@@ -165,17 +164,15 @@
       <form id="barcodeSearchForm">
         <input type="text" id="barcodeSearchInput" readonly required>
         <button type="button" onclick="scanBarcode('barcodeSearchInput')">Escanear Código</button>
+        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+
       </form>
       <div id="barcodeSearchResult" style="margin-top:10px;"></div>
-      <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
-
       <div id="barcodeSearchScanner" style="width:300px; height:300px; margin-top:10px;"></div>
     </div>
   </div>
   
   <script>
-    import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
     // 1. CONFIGURACIÓN DE FIREBASE (REEMPLAZAR CON LA TUYA)
     var firebaseConfig = {
         apiKey: "AIzaSyBDSVQWbrSIuWUwIfk-_YVfgY4RsTG-9FA",
@@ -185,8 +182,9 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
   messagingSenderId: "585594099899",
   appId: "1:585594099899:web:27f191367a94a09fb0319e"
     };
-    const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+    
     // 2. Función para convertir archivo a Base64 (para guardar la foto)
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
@@ -305,7 +303,6 @@ const db = getFirestore(app);
 }
 
 
-
     function stopScanner(){
       if(currentScanner){
          currentScanner.stop().then(() => {
@@ -320,26 +317,20 @@ const db = getFirestore(app);
     // 5. Manejo de formularios
     
     // Agregar producto
-    document.getElementById('addProductForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('productName').value;
-  const barcode = document.getElementById('productBarcode').value;
-  const quantity = parseInt(document.getElementById('productQuantity').value);
-
-  try {
-    await addDoc(collection(db, "productos"), {
-      nombre: name,
-      codigoBarras: barcode,
-      cantidad: quantity
-    });
-    alert("Producto agregado exitosamente.");
-    closeAddProductModal();
-  } catch (error) {
-    console.error("Error al agregar producto:", error);
-    alert("Hubo un error al agregar el producto.");
-  }
-});
-
+    document.getElementById("addProductForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      var name = document.getElementById("productName").value;
+      var barcode = document.getElementById("productBarcode").value;
+      var quantity = parseInt(document.getElementById("productQuantity").value);
+      var photoFile = document.getElementById("productPhoto").files[0];
+      var photoData = "";
+      if(photoFile){
+         try{
+           photoData = await fileToBase64(photoFile);
+         } catch(err){
+           console.error("Error al convertir foto:", err);
+         }
+      }
       // Se usa el código de barras como ID del documento
       db.collection("products").doc(barcode).set({
          name: name,
@@ -384,8 +375,7 @@ const db = getFirestore(app);
     });
     
     // Modificar producto
-    
-document.getElementById("modifyProductForm").addEventListener("submit", async function(e){
+    document.getElementById("modifyProductForm").addEventListener("submit", async function(e){
       e.preventDefault();
       var barcode = document.getElementById("modifyBarcode").value;
       var name = document.getElementById("modifyName").value;
@@ -486,7 +476,7 @@ document.getElementById("modifyProductForm").addEventListener("submit", async fu
   }
 }
 
-
   </script>
 </body>
 </html>
+
