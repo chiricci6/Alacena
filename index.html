@@ -173,17 +173,20 @@
   </div>
   
   <script>
-    // 1. CONFIGURACIÓN DE FIREBASE (REEMPLAZAR CON LA TUYA)
-    var firebaseConfig = {
-        apiKey: "AIzaSyBDSVQWbrSIuWUwIfk-_YVfgY4RsTG-9FA",
-  authDomain: "alacena-5307c.firebaseapp.com",
-  projectId: "alacena-5307c",
-  storageBucket: "alacena-5307c.firebasestorage.app",
-  messagingSenderId: "585594099899",
-  appId: "1:585594099899:web:27f191367a94a09fb0319e"
-    };
-    firebase.initializeApp(firebaseConfig);
-    var db = firebase.firestore();
+    // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDSVQWbrSIuWUwIfk-_YVfgY4RsTG-9FA",
+    authDomain: "alacena-5307c.firebaseapp.com",
+    projectId: "alacena-5307c",
+    storageBucket: "alacena-5307c.firebasestorage.app",
+    messagingSenderId: "585594099899",
+    appId: "1:585594099899:web:27f191367a94a09fb0319e"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
     
     // 2. Función para convertir archivo a Base64 (para guardar la foto)
     function fileToBase64(file) {
