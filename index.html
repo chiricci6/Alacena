@@ -93,6 +93,7 @@
         <input type="text" id="productBarcode" readonly required>
         <button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
         <br><br>
+        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
         <label for="productQuantity">Cantidad:</label>
         <input type="number" id="productQuantity" value="1" min="1" required>
         <br><br>
@@ -113,6 +114,8 @@
         <input type="text" id="withdrawBarcode" readonly required>
         <button type="button" onclick="scanBarcode('withdrawBarcode')">Escanear Código</button>
         <br><br>
+        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+
         <label for="withdrawQuantity">Cantidad a retirar:</label>
         <input type="number" id="withdrawQuantity" value="1" min="1" required>
         <br><br>
@@ -130,6 +133,8 @@
       <form id="modifyProductForm">
         <label for="productBarcode">Código de Barras:</label>
 <input type="text" id="productBarcode" required>
+        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+
 <button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
 <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
@@ -162,6 +167,8 @@
         <button type="button" onclick="scanBarcode('barcodeSearchInput')">Escanear Código</button>
       </form>
       <div id="barcodeSearchResult" style="margin-top:10px;"></div>
+      <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+
       <div id="barcodeSearchScanner" style="width:300px; height:300px; margin-top:10px;"></div>
     </div>
   </div>
@@ -463,11 +470,14 @@
     }
     function toggleManualInput(inputId) {
   var inputField = document.getElementById(inputId);
-  inputField.readOnly = !inputField.readOnly;
-  if (!inputField.readOnly) {
+  if (inputField.hasAttribute("readonly")) {
+    inputField.removeAttribute("readonly");  // Permitir edición
     inputField.focus();
+  } else {
+    inputField.setAttribute("readonly", true);  // Volver a solo lectura
   }
 }
+
 
   </script>
 </body>
