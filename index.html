@@ -174,180 +174,143 @@
   
   <script>
     // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAGXcl1ArDCYMNTcq0m4jNxz2JyhAfHiSE",
-  authDomain: "alacena-ec3c8.firebaseapp.com",
-  projectId: "alacena-ec3c8",
-  storageBucket: "alacena-ec3c8.firebasestorage.app",
-  messagingSenderId: "533176003832",
-  appId: "1:533176003832:web:3d77eff70666ac3449df0d"
-        };
+const firebaseConfig = {
+    apiKey: "AIzaSyAGXcl1ArDCYMNTcq0m4jNxz2JyhAfHiSE",
+    authDomain: "alacena-ec3c8.firebaseapp.com",
+    projectId: "alacena-ec3c8",
+    storageBucket: "alacena-ec3c8.firebasestorage.app",
+    messagingSenderId: "533176003832",
+    appId: "1:533176003832:web:3d77eff70666ac3449df0d"
+};
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    
-    // 2. Función para convertir archivo a Base64 (para guardar la foto)
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
+// Función para convertir archivo a Base64 (para guardar la foto)
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        if (!file || file.size === 0) {
+            reject("Archivo de imagen no válido.");
+            return;
+        }
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
         reader.readAsDataURL(file);
-      });
-    }
-    
-    // 3. Funciones para abrir y cerrar modales
-    function openModal(modalId) {
-      document.getElementById(modalId).style.display = "block";
-    }
-    function closeModal(modalId) {
-      document.getElementById(modalId).style.display = "none";
-    }
-    function openAddProductModal() {
-      openModal("addProductModal");
-    }
-    function closeAddProductModal() {
-      closeModal("addProductModal");
-      stopScanner();
-      document.getElementById("addProductForm").reset();
-    }
-    function openWithdrawProductModal() {
-      openModal("withdrawProductModal");
-    }
-    function closeWithdrawProductModal() {
-      closeModal("withdrawProductModal");
-      stopScanner();
-      document.getElementById("withdrawProductForm").reset();
-    }
-    function openModifyProductModal() {
-      openModal("modifyProductModal");
-      document.getElementById("modifyDetails").style.display = "none";
-    }
-    function closeModifyProductModal() {
-      closeModal("modifyProductModal");
-      stopScanner();
-      document.getElementById("modifyProductForm").reset();
-      document.getElementById("modifyDetails").style.display = "none";
-    }
-    function openBarcodeSearchModal() {
-      openModal("barcodeSearchModal");
-    }
-    function closeBarcodeSearchModal() {
-      closeModal("barcodeSearchModal");
-      stopScanner();
-      document.getElementById("barcodeSearchForm").reset();
-      document.getElementById("barcodeSearchResult").innerHTML = "";
-    }
-    
-    // 4. Manejo del scanner (usando html5-qrcode)
-    var currentScanner = null;
-    var activeScannerElement = "";
-    function scanBarcode(targetInputId) {
-      // Selecciona el contenedor según el campo destino
-      if(targetInputId === "productBarcode"){
-         activeScannerElement = "addScanner";
-      } else if(targetInputId === "withdrawBarcode"){
-         activeScannerElement = "withdrawScanner";
-      } else if(targetInputId === "modifyBarcode"){
-         activeScannerElement = "modifyScanner";
-      } else if(targetInputId === "barcodeSearchInput"){
-         activeScannerElement = "barcodeSearchScanner";
-      } else {
-         alert("Scanner no disponible para este campo");
-         return;
-      }
-      // Si hay un scanner activo, lo detiene primero
-      if(currentScanner){
-         currentScanner.stop().then(() => {
-            currentScanner.clear();
-            currentScanner = null;
-            startScanner(targetInputId, activeScannerElement);
-         }).catch(err => {
-            console.error(err);
-         });
-      } else {
-         startScanner(targetInputId, activeScannerElement);
-      }
-    }
-    function startScanner(targetInputId, scannerElementId) {
-  currentScanner = new Html5Qrcode(scannerElementId);
-
-  Html5Qrcode.getCameras().then(devices => {
-    if (devices && devices.length) {
-      // Busca una cámara trasera si existe
-      const backCamera = devices.find(device => 
-        device.label.toLowerCase().includes("back") || 
-        device.label.toLowerCase().includes("rear")
-      ) || devices[0];  // Si no hay, usa la primera cámara disponible
-
-      currentScanner.start(
-        { deviceId: { exact: backCamera.id } },
-        { fps: 10, qrbox: 250 },
-        qrCodeMessage => {
-          document.getElementById(targetInputId).value = qrCodeMessage;
-          stopScanner();
-        },
-        errorMessage => {
-          console.warn("Error de escaneo:", errorMessage);
-        }
-      ).catch(err => {
-        console.error("No se pudo iniciar el escáner:", err);
-        alert("No se pudo iniciar la cámara. Verificá los permisos del navegador.");
-      });
-    } else {
-      alert("No se detectaron cámaras.");
-    }
-  }).catch(err => {
-    console.error("Error al obtener cámaras:", err);
-    alert("Ocurrió un error al acceder a la cámara.");
-  });
+    });
 }
 
+// Función para redimensionar imagen antes de convertir a Base64
+function resizeImage(file, maxWidth, maxHeight, callback) {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function (event) {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
 
-    function stopScanner(){
-      if(currentScanner){
-         currentScanner.stop().then(() => {
-           currentScanner.clear();
-           currentScanner = null;
-         }).catch(err => {
-           console.error(err);
-         });
-      }
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL("image/jpeg"));
+        };
+    };
+}
+
+// Manejo del scanner
+var currentScanner = null;
+function scanBarcode(targetInputId) {
+    let scannerElement = targetInputId + "Scanner";
+    if (currentScanner) {
+        currentScanner.stop().then(() => {
+            currentScanner.clear();
+            currentScanner = null;
+            startScanner(targetInputId, scannerElement);
+        }).catch(err => console.error(err));
+    } else {
+        startScanner(targetInputId, scannerElement);
+    }
+}
+
+function startScanner(targetInputId, scannerElementId) {
+    currentScanner = new Html5Qrcode(scannerElementId);
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices.length) {
+            const backCamera = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+            currentScanner.start(
+                { deviceId: { exact: backCamera.id } },
+                { fps: 10, qrbox: 250 },
+                qrCodeMessage => {
+                    const targetInput = document.getElementById(targetInputId);
+                    targetInput.value = qrCodeMessage;
+                    targetInput.dispatchEvent(new Event('change', { bubbles: true })); // Solución
+                    stopScanner();
+                },
+                errorMessage => console.warn("Error de escaneo:", errorMessage)
+            ).catch(err => console.error("No se pudo iniciar el escáner:", err));
+        } else {
+            alert("No se detectaron cámaras.");
+        }
+    }).catch(err => console.error("Error al obtener cámaras:", err));
+}
+
+function stopScanner() {
+    if (currentScanner) {
+        currentScanner.stop().then(() => {
+            currentScanner.clear();
+            currentScanner = null;
+        }).catch(err => console.error(err));
+    }
+}
+
+// Agregar producto
+document.getElementById("addProductForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var name = document.getElementById("productName").value;
+    var barcode = document.getElementById("productBarcode").value;
+    var quantity = parseInt(document.getElementById("productQuantity").value);
+    var photoFile = document.getElementById("productPhoto").files[0];
+    var photoData = "";
+    
+    if (photoFile) {
+        try {
+            await resizeImage(photoFile, 800, 600, function(resizedImage) {
+                photoData = resizedImage;
+            });
+        } catch (err) {
+            console.error("Error al procesar la imagen:", err);
+        }
     }
     
-    // 5. Manejo de formularios
-    
-    // Agregar producto
-    document.getElementById("addProductForm").addEventListener("submit", async function(e){
-      e.preventDefault();
-      var name = document.getElementById("productName").value;
-      var barcode = document.getElementById("productBarcode").value;
-      var quantity = parseInt(document.getElementById("productQuantity").value);
-      var photoFile = document.getElementById("productPhoto").files[0];
-      var photoData = "";
-      if(photoFile){
-         try{
-           photoData = await fileToBase64(photoFile);
-         } catch(err){
-           console.error("Error al convertir foto:", err);
-         }
-      }
-      // Se usa el código de barras como ID del documento
-      db.collection("products").doc(barcode).set({
-         name: name,
-         quantity: quantity,
-         photo: photoData,
-         barcode: barcode
-      }).then(() => {
-         alert("Producto agregado exitosamente");
-         closeAddProductModal();
-      }).catch(err => {
-         console.error("Error al agregar producto:", err);
-         alert("Error al agregar producto");
-      });
+    db.collection("products").doc(barcode).set({
+        name: name,
+        quantity: quantity,
+        photo: photoData,
+        barcode: barcode
+    }).then(() => {
+        alert("Producto agregado exitosamente");
+        document.getElementById("addProductForm").reset();
+    }).catch(err => {
+        console.error("Error al agregar producto:", err);
+        alert("Error al agregar producto");
     });
+});
+
     
     // Retirar producto
     document.getElementById("withdrawProductForm").addEventListener("submit", function(e){
