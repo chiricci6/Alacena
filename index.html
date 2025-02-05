@@ -286,9 +286,12 @@
         { deviceId: { exact: backCamera.id } },
         { fps: 10, qrbox: 250 },
         qrCodeMessage => {
-          document.getElementById(targetInputId).value = qrCodeMessage;
-          stopScanner();
-        },
+  const targetInput = document.getElementById(targetInputId);
+  targetInput.value = qrCodeMessage;
+  targetInput.dispatchEvent(new Event('change')); // 🔥 Importante para que funcione la búsqueda automática
+  stopScanner();
+}
+
         errorMessage => {
           console.warn("Error de escaneo:", errorMessage);
         }
@@ -327,13 +330,16 @@
       var quantity = parseInt(document.getElementById("productQuantity").value);
       var photoFile = document.getElementById("productPhoto").files[0];
       var photoData = "";
-      if(photoFile){
-         try{
-           photoData = await fileToBase64(photoFile);
-         } catch(err){
-           console.error("Error al convertir foto:", err);
-         }
-      }
+      if(photoFile && photoFile.size > 0) {
+  try {
+    photoData = await fileToBase64(photoFile);
+  } catch(err) {
+    console.error("Error al convertir la foto:", err);
+    alert("Hubo un problema al procesar la foto. Intenta nuevamente.");
+    return; // Para evitar continuar con datos incompletos
+  }
+}
+
       // Se usa el código de barras como ID del documento
       db.collection("products").doc(barcode).set({
          name: name,
