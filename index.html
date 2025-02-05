@@ -185,8 +185,6 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
   messagingSenderId: "585594099899",
   appId: "1:585594099899:web:27f191367a94a09fb0319e"
     };
-    firebase.initializeApp(firebaseConfig);
-    var db = firebase.firestore();
     const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
     // 2. Función para convertir archivo a Base64 (para guardar la foto)
@@ -386,35 +384,33 @@ const db = getFirestore(app);
     });
     
     // Modificar producto
-    document.getElementById("modifyProductForm").addEventListener("submit", async function(e){
-      e.preventDefault();
-      var barcode = document.getElementById("modifyBarcode").value;
-      var name = document.getElementById("modifyName").value;
-      var quantity = parseInt(document.getElementById("modifyQuantity").value);
-      var photoFile = document.getElementById("modifyPhoto").files[0];
-      var photoData = "";
-      if(photoFile){
-         try{
-           photoData = await fileToBase64(photoFile);
-         } catch(err){
-           console.error("Error al convertir foto:", err);
-         }
-      }
-      var updateData = {
-         name: name,
-         quantity: quantity
-      };
-      if(photoData){
-         updateData.photo = photoData;
-      }
-      db.collection("products").doc(barcode).update(updateData).then(() => {
-         alert("Producto modificado exitosamente");
-         closeModifyProductModal();
-      }).catch(err => {
-         console.error("Error al modificar producto:", err);
-         alert("Error al modificar producto");
-      });
-    });
+    document.getElementById('modifyProductForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const productId = document.getElementById('modifyProductId').value.trim();
+    const newName = document.getElementById('modifyProductName').value.trim();
+    const newPrice = parseFloat(document.getElementById('modifyProductPrice').value.trim());
+
+    if (!productId || !newName || isNaN(newPrice)) {
+        alert("Por favor, completa todos los campos correctamente.");
+        return;
+    }
+
+    try {
+        const productRef = doc(db, "productos", productId);
+        await updateDoc(productRef, {
+            name: newName,
+            price: newPrice
+        });
+
+        alert("Producto modificado exitosamente.");
+        document.getElementById('modifyProductForm').reset();
+    } catch (error) {
+        console.error("Error al modificar el producto:", error);
+        alert("Hubo un error al modificar el producto.");
+    }
+});
+
     
     // Al cambiar el valor del campo de código en la modificación, se busca el producto
     document.getElementById("modifyBarcode").addEventListener("change", function(){
