@@ -90,7 +90,7 @@
         <input type="file" id="productPhoto" accept="image/*" capture="environment">
         <br><br>
         <label for="productBarcode">Código de Barras:</label>
-        <input type="text" id="productBarcode" readonly required>
+        <input type="text" id="productBarcode" readonly>
         <button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
@@ -112,7 +112,7 @@
       <h2>Retirar Producto</h2>
       <form id="withdrawProductForm">
         <label for="withdrawBarcode">Código de Barras:</label>
-        <input type="text" id="withdrawBarcode" readonly required>
+        <input type="text" id="withdrawBarcode" readonly>
         <button type="button" onclick="scanBarcode('withdrawBarcode')">Escanear Código</button>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
@@ -133,7 +133,7 @@
       <h2>Modificar Producto</h2>
       <form id="modifyProductForm">
         <label for="modifyBarcode">Código de Barras:</label>
-        <input type="text" id="modifyBarcode" readonly required>
+        <input type="text" id="modifyBarcode" readonly>
         <button type="button" onclick="scanBarcode('modifyBarcode')">Escanear Código</button>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
@@ -162,7 +162,7 @@
       <span class="close" onclick="closeBarcodeSearchModal()">&times;</span>
       <h2>Buscar por Código de Barras</h2>
       <form id="barcodeSearchForm">
-        <input type="text" id="barcodeSearchInput" readonly required>
+        <input type="text" id="barcodeSearchInput" readonly>
         <button type="button" onclick="scanBarcode('barcodeSearchInput')">Escanear Código</button>
         <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
 
