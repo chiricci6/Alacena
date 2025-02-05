@@ -260,38 +260,42 @@
          startScanner(targetInputId, activeScannerElement);
       }
     }
-    function startScanner(targetInputId, scannerElementId){
-      currentScanner = new Html5Qrcode(scannerElementId);
-      Html5Qrcode.getCameras().then(devices => {
-          if (devices && devices.length) {
-              var cameraId = devices[0].id;
-              currentScanner.start(
-                  cameraId, 
-                  {
-                    fps: 10,
-                    qrbox: 250
-                  },
-                  qrCodeMessage => {
-                    // Cuando se detecta un código, se asigna al input y se detiene el scanner.
-                    document.getElementById(targetInputId).value = qrCodeMessage;
-                    currentScanner.stop().then(() => {
-                      currentScanner.clear();
-                      currentScanner = null;
-                    }).catch(err => {
-                      console.error(err);
-                    });
-                  },
-                  errorMessage => {
-                      // errores en tiempo real (se pueden ignorar)
-                  }
-              ).catch(err => {
-                  console.error(err);
-              });
-          }
-      }).catch(err => {
-          console.error(err);
+    function startScanner(targetInputId, scannerElementId) {
+  currentScanner = new Html5Qrcode(scannerElementId);
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      // Buscar la cámara trasera
+      var backCamera = devices.find(device => device.label.toLowerCase().includes('back')) || devices[0];
+      var cameraId = backCamera.id;
+
+      currentScanner.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        qrCodeMessage => {
+          // Cuando se detecta un código, se asigna al input y se detiene el scanner.
+          document.getElementById(targetInputId).value = qrCodeMessage;
+          currentScanner.stop().then(() => {
+            currentScanner.clear();
+            currentScanner = null;
+          }).catch(err => {
+            console.error(err);
+          });
+        },
+        errorMessage => {
+          // errores en tiempo real (se pueden ignorar)
+        }
+      ).catch(err => {
+        console.error(err);
       });
     }
+  }).catch(err => {
+    console.error(err);
+  });
+}
+
     function stopScanner(){
       if(currentScanner){
          currentScanner.stop().then(() => {
