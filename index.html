@@ -114,7 +114,7 @@
         <label for="withdrawBarcode">Código de Barras:</label>
         <input type="text" id="withdrawBarcode" readonly>
         <button type="button" onclick="scanBarcode('withdrawBarcode')">Escanear Código</button>
-        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+        <button type="button" onclick="toggleManualInput('withdrawBarcode')">Ingreso Manual</button>
 
         <br><br>
         <label for="withdrawQuantity">Cantidad a retirar:</label>
@@ -135,7 +135,7 @@
         <label for="modifyBarcode">Código de Barras:</label>
         <input type="text" id="modifyBarcode" readonly>
         <button type="button" onclick="scanBarcode('modifyBarcode')">Escanear Código</button>
-        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+        <button type="button" onclick="toggleManualInput('modifyBarcode')">Ingreso Manual</button>
 
         <br><br>
         <!-- Se muestran los campos de modificación una vez encontrado el producto -->
@@ -164,7 +164,7 @@
       <form id="barcodeSearchForm">
         <input type="text" id="barcodeSearchInput" readonly>
         <button type="button" onclick="scanBarcode('barcodeSearchInput')">Escanear Código</button>
-        <button type="button" onclick="toggleManualInput('productBarcode')">Ingreso Manual</button>
+        <button type="button" onclick="toggleManualInput('barcodeSearchInput')">Ingreso Manual</button>
 
       </form>
       <div id="barcodeSearchResult" style="margin-top:10px;"></div>
