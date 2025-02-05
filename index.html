@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Almacén de Productos</title>
+  <style>
+    /* Estilos básicos y de modal */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #results div {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 5px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px;
+    }
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 1; 
+      padding-top: 60px; 
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%; 
+      overflow: auto; 
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+    .close {
+      color: #aaa;
+      position: absolute;
+      right: 10px;
+      top: 5px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: black;
+    }
+  </style>
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <!-- html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <h1>Almacén de Productos</h1>
+  
+  <!-- Buscador por nombre -->
+  <div id="search-container">
+    <input type="text" id="searchInput" placeholder="Buscar producto por nombre">
+    <button onclick="searchProducts()">Buscar</button>
+  </div>
+  <div id="results"></div>
+  
+  <!-- Botones de acciones -->
+  <div id="actions">
+    <button onclick="openAddProductModal()">Agregar Producto</button>
+    <button onclick="openWithdrawProductModal()">Retirar Producto</button>
+    <button onclick="openModifyProductModal()">Modificar Producto</button>
+    <button onclick="openBarcodeSearchModal()">Buscar por Código de Barras</button>
+  </div>
+  
+  <!-- Modal: Agregar Producto -->
+  <div id="addProductModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAddProductModal()">&times;</span>
+      <h2>Agregar Producto</h2>
+      <form id="addProductForm">
+        <label for="productName">Nombre:</label>
+        <input type="text" id="productName" required>
+        <br><br>
+        <label for="productPhoto">Foto:</label>
+        <input type="file" id="productPhoto" accept="image/*" capture="environment">
+        <br><br>
+        <label for="productBarcode">Código de Barras:</label>
+        <input type="text" id="productBarcode" readonly required>
+        <button type="button" onclick="scanBarcode('productBarcode')">Escanear Código</button>
+        <br><br>
+        <label for="productQuantity">Cantidad:</label>
+        <input type="number" id="productQuantity" value="1" min="1" required>
+        <br><br>
+        <button type="submit">Agregar</button>
+      </form>
+      <!-- Contenedor para el scanner -->
+      <div id="addScanner" style="width:300px; height:300px; margin-top:10px;"></div>
+    </div>
+  </div>
+  
+  <!-- Modal: Retirar Producto -->
+  <div id="withdrawProductModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeWithdrawProductModal()">&times;</span>
+      <h2>Retirar Producto</h2>
+      <form id="withdrawProductForm">
+        <label for="withdrawBarcode">Código de Barras:</label>
+        <input type="text" id="withdrawBarcode" readonly required>
+        <button type="button" onclick="scanBarcode('withdrawBarcode')">Escanear Código</button>
+        <br><br>
+        <label for="withdrawQuantity">Cantidad a retirar:</label>
+        <input type="number" id="withdrawQuantity" value="1" min="1" required>
+        <br><br>
+        <button type="submit">Retirar</button>
+      </form>
+      <div id="withdrawScanner" style="width:300px; height:300px; margin-top:10px;"></div>
+    </div>
+  </div>
+  
+  <!-- Modal: Modificar Producto -->
+  <div id="modifyProductModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModifyProductModal()">&times;</span>
+      <h2>Modificar Producto</h2>
+      <form id="modifyProductForm">
+        <label for="modifyBarcode">Código de Barras:</label>
+        <input type="text" id="modifyBarcode" readonly required>
+        <button type="button" onclick="scanBarcode('modifyBarcode')">Escanear Código</button>
+        <br><br>
+        <!-- Se muestran los campos de modificación una vez encontrado el producto -->
+        <div id="modifyDetails" style="display:none;">
+          <label for="modifyName">Nombre:</label>
+          <input type="text" id="modifyName" required>
+          <br><br>
+          <label for="modifyPhoto">Foto:</label>
+          <input type="file" id="modifyPhoto" accept="image/*" capture="environment">
+          <br><br>
+          <label for="modifyQuantity">Cantidad:</label>
+          <input type="number" id="modifyQuantity" min="0" required>
+          <br><br>
+          <button type="submit">Modificar</button>
+        </div>
+      </form>
+      <div id="modifyScanner" style="width:300px; height:300px; margin-top:10px;"></div>
+    </div>
+  </div>
+  
+  <!-- Modal: Buscar por Código de Barras -->
+  <div id="barcodeSearchModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeBarcodeSearchModal()">&times;</span>
+      <h2>Buscar por Código de Barras</h2>
+      <form id="barcodeSearchForm">
+        <input type="text" id="barcodeSearchInput" readonly required>
+        <button type="button" onclick="scanBarcode('barcodeSearchInput')">Escanear Código</button>
+      </form>
+      <div id="barcodeSearchResult" style="margin-top:10px;"></div>
+      <div id="barcodeSearchScanner" style="width:300px; height:300px; margin-top:10px;"></div>
+    </div>
+  </div>
+  
+  <script>
+    // 1. CONFIGURACIÓN DE FIREBASE (REEMPLAZAR CON LA TUYA)
+    var firebaseConfig = {
+        apiKey: "AIzaSyBDSVQWbrSIuWUwIfk-_YVfgY4RsTG-9FA",
+  authDomain: "alacena-5307c.firebaseapp.com",
+  projectId: "alacena-5307c",
+  storageBucket: "alacena-5307c.firebasestorage.app",
+  messagingSenderId: "585594099899",
+  appId: "1:585594099899:web:27f191367a94a09fb0319e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+    
+    // 2. Función para convertir archivo a Base64 (para guardar la foto)
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    // 3. Funciones para abrir y cerrar modales
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = "block";
+    }
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = "none";
+    }
+    function openAddProductModal() {
+      openModal("addProductModal");
+    }
+    function closeAddProductModal() {
+      closeModal("addProductModal");
+      stopScanner();
+      document.getElementById("addProductForm").reset();
+    }
+    function openWithdrawProductModal() {
+      openModal("withdrawProductModal");
+    }
+    function closeWithdrawProductModal() {
+      closeModal("withdrawProductModal");
+      stopScanner();
+      document.getElementById("withdrawProductForm").reset();
+    }
+    function openModifyProductModal() {
+      openModal("modifyProductModal");
+      document.getElementById("modifyDetails").style.display = "none";
+    }
+    function closeModifyProductModal() {
+      closeModal("modifyProductModal");
+      stopScanner();
+      document.getElementById("modifyProductForm").reset();
+      document.getElementById("modifyDetails").style.display = "none";
+    }
+    function openBarcodeSearchModal() {
+      openModal("barcodeSearchModal");
+    }
+    function closeBarcodeSearchModal() {
+      closeModal("barcodeSearchModal");
+      stopScanner();
+      document.getElementById("barcodeSearchForm").reset();
+      document.getElementById("barcodeSearchResult").innerHTML = "";
+    }
+    
+    // 4. Manejo del scanner (usando html5-qrcode)
+    var currentScanner = null;
+    var activeScannerElement = "";
+    function scanBarcode(targetInputId) {
+      // Selecciona el contenedor según el campo destino
+      if(targetInputId === "productBarcode"){
+         activeScannerElement = "addScanner";
+      } else if(targetInputId === "withdrawBarcode"){
+         activeScannerElement = "withdrawScanner";
+      } else if(targetInputId === "modifyBarcode"){
+         activeScannerElement = "modifyScanner";
+      } else if(targetInputId === "barcodeSearchInput"){
+         activeScannerElement = "barcodeSearchScanner";
+      } else {
+         alert("Scanner no disponible para este campo");
+         return;
+      }
+      // Si hay un scanner activo, lo detiene primero
+      if(currentScanner){
+         currentScanner.stop().then(() => {
+            currentScanner.clear();
+            currentScanner = null;
+            startScanner(targetInputId, activeScannerElement);
+         }).catch(err => {
+            console.error(err);
+         });
+      } else {
+         startScanner(targetInputId, activeScannerElement);
+      }
+    }
+    function startScanner(targetInputId, scannerElementId){
+      currentScanner = new Html5Qrcode(scannerElementId);
+      Html5Qrcode.getCameras().then(devices => {
+          if (devices && devices.length) {
+              var cameraId = devices[0].id;
+              currentScanner.start(
+                  cameraId, 
+                  {
+                    fps: 10,
+                    qrbox: 250
+                  },
+                  qrCodeMessage => {
+                    // Cuando se detecta un código, se asigna al input y se detiene el scanner.
+                    document.getElementById(targetInputId).value = qrCodeMessage;
+                    currentScanner.stop().then(() => {
+                      currentScanner.clear();
+                      currentScanner = null;
+                    }).catch(err => {
+                      console.error(err);
+                    });
+                  },
+                  errorMessage => {
+                      // errores en tiempo real (se pueden ignorar)
+                  }
+              ).catch(err => {
+                  console.error(err);
+              });
+          }
+      }).catch(err => {
+          console.error(err);
+      });
+    }
+    function stopScanner(){
+      if(currentScanner){
+         currentScanner.stop().then(() => {
+           currentScanner.clear();
+           currentScanner = null;
+         }).catch(err => {
+           console.error(err);
+         });
+      }
+    }
+    
+    // 5. Manejo de formularios
+    
+    // Agregar producto
+    document.getElementById("addProductForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      var name = document.getElementById("productName").value;
+      var barcode = document.getElementById("productBarcode").value;
+      var quantity = parseInt(document.getElementById("productQuantity").value);
+      var photoFile = document.getElementById("productPhoto").files[0];
+      var photoData = "";
+      if(photoFile){
+         try{
+           photoData = await fileToBase64(photoFile);
+         } catch(err){
+           console.error("Error al convertir foto:", err);
+         }
+      }
+      // Se usa el código de barras como ID del documento
+      db.collection("products").doc(barcode).set({
+         name: name,
+         quantity: quantity,
+         photo: photoData,
+         barcode: barcode
+      }).then(() => {
+         alert("Producto agregado exitosamente");
+         closeAddProductModal();
+      }).catch(err => {
+         console.error("Error al agregar producto:", err);
+         alert("Error al agregar producto");
+      });
+    });
+    
+    // Retirar producto
+    document.getElementById("withdrawProductForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var barcode = document.getElementById("withdrawBarcode").value;
+      var withdrawQty = parseInt(document.getElementById("withdrawQuantity").value);
+      var productRef = db.collection("products").doc(barcode);
+      productRef.get().then(doc => {
+         if(doc.exists){
+            var currentQty = doc.data().quantity || 0;
+            if(currentQty < withdrawQty){
+               alert("Cantidad insuficiente en almacén");
+               return;
+            }
+            productRef.update({
+               quantity: currentQty - withdrawQty
+            }).then(() => {
+               alert("Producto retirado exitosamente");
+               closeWithdrawProductModal();
+            });
+         } else {
+            alert("Producto no encontrado");
+         }
+      }).catch(err => {
+         console.error("Error al retirar producto:", err);
+         alert("Error al retirar producto");
+      });
+    });
+    
+    // Modificar producto
+    document.getElementById("modifyProductForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      var barcode = document.getElementById("modifyBarcode").value;
+      var name = document.getElementById("modifyName").value;
+      var quantity = parseInt(document.getElementById("modifyQuantity").value);
+      var photoFile = document.getElementById("modifyPhoto").files[0];
+      var photoData = "";
+      if(photoFile){
+         try{
+           photoData = await fileToBase64(photoFile);
+         } catch(err){
+           console.error("Error al convertir foto:", err);
+         }
+      }
+      var updateData = {
+         name: name,
+         quantity: quantity
+      };
+      if(photoData){
+         updateData.photo = photoData;
+      }
+      db.collection("products").doc(barcode).update(updateData).then(() => {
+         alert("Producto modificado exitosamente");
+         closeModifyProductModal();
+      }).catch(err => {
+         console.error("Error al modificar producto:", err);
+         alert("Error al modificar producto");
+      });
+    });
+    
+    // Al cambiar el valor del campo de código en la modificación, se busca el producto
+    document.getElementById("modifyBarcode").addEventListener("change", function(){
+      var barcode = this.value;
+      if(barcode){
+         db.collection("products").doc(barcode).get().then(doc => {
+            if(doc.exists){
+               var data = doc.data();
+               document.getElementById("modifyName").value = data.name;
+               document.getElementById("modifyQuantity").value = data.quantity;
+               // Nota: la foto actual no se carga en el input file
+               document.getElementById("modifyDetails").style.display = "block";
+            } else {
+               alert("Producto no encontrado");
+            }
+         }).catch(err => {
+            console.error("Error al obtener producto:", err);
+         });
+      }
+    });
+    
+    // Buscar por código de barras: se escucha el cambio en el input
+    document.getElementById("barcodeSearchInput").addEventListener("change", function(){
+      var barcode = this.value;
+      if(barcode){
+         db.collection("products").doc(barcode).get().then(doc => {
+            if(doc.exists){
+               var data = doc.data();
+               document.getElementById("barcodeSearchResult").innerHTML = 
+                  "<p><strong>Nombre:</strong> " + data.name + "</p>" +
+                  "<p><strong>Cantidad:</strong> " + data.quantity + "</p>" +
+                  (data.photo ? "<img src='" + data.photo + "' alt='Foto' style='max-width:200px;'/>" : "");
+            } else {
+               document.getElementById("barcodeSearchResult").innerHTML = "<p>Producto no encontrado</p>";
+            }
+         }).catch(err => {
+            console.error("Error al buscar producto:", err);
+         });
+      }
+    });
+    
+    // Buscar productos por nombre
+    function searchProducts(){
+      var searchText = document.getElementById("searchInput").value.toLowerCase();
+      db.collection("products").get().then(querySnapshot => {
+         var resultsDiv = document.getElementById("results");
+         resultsDiv.innerHTML = "";
+         querySnapshot.forEach(doc => {
+            var data = doc.data();
+            if(data.name.toLowerCase().includes(searchText)){
+               var productDiv = document.createElement("div");
+               productDiv.innerHTML = "<h3>" + data.name + "</h3>" +
+                                      (data.photo ? "<img src='" + data.photo + "' alt='Foto' style='max-width:100px;'/>" : "") +
+                                      "<p><strong>Cantidad:</strong> " + data.quantity + "</p>" +
+                                      "<p><strong>Código:</strong> " + data.barcode + "</p>";
+               resultsDiv.appendChild(productDiv);
+            }
+         });
+      }).catch(err => {
+         console.error("Error al buscar productos:", err);
+      });
+    }
+  </script>
+</body>
+</html>
